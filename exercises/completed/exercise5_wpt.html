@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+    <title>Resources Requests with Client Hints</title>
+    <meta http-equiv="Accept-CH" content="DPR, Viewport-Width, Width">
+    <script src="resources/testharness.js"></script>
+    <script src="resources/testharnessreport.js"></script>
+    <link href="resources/testharness.css" rel="stylesheet">
+    <base href="{{proto}}://{{cloud-name}}/">
+    <script>
+        let baseTag = document.getElementsByTagName("base")[0];
+        if (/}}/.test(baseTag.getAttribute("href")))
+            baseTag.setAttribute("href", "http://res.cloudinary.com/demo/");
+    </script>
+
+    <script>
+        let t = async_test(()=>{});
+
+        function runTests() {
+            test(t => {
+                // check to see if the resource was downloaded by looking at the ResourceTiming API
+                let img = document.getElementById("img1");
+                let resourceTiming = window.performance.getEntriesByName(img.currentSrc, "resource");
+                assert_equals(resourceTiming.length, 1, img.currentSrc);
+                assert_equals(img.naturalWidth, 864, img.currentSrc);
+            }, "w_auto works with Client Hints `Width` header");
+
+            test(t => {
+                let img = document.getElementById("img2");
+                let resourceTiming = window.performance.getEntriesByName(img.currentSrc, "resource");
+                assert_equals(resourceTiming.length, 1, img.currentSrc);
+                assert_equals(img.naturalWidth, Math.floor(500 / window.devicePixelRatio), img.currentSrc);
+                //For some reason, w_auto sometimes returns:
+                //assert_equals(img.naturalWidth, 250);
+            },"should support w_auto with width header");
+
+            test(t => {
+                let img = document.getElementById("img3");
+                let resourceTiming = window.performance.getEntriesByName(img.currentSrc, "resource");
+                assert_equals(resourceTiming.length, 1, img.currentSrc);
+                assert_equals(img.naturalWidth, Math.floor(505 / window.devicePixelRatio), img.currentSrc);
+                //For some reason, w_auto sometimes returns:
+                //assert_equals(img.naturalWidth, 252);
+            }, "should support w_auto with header and different modulo");
+
+            test(t => {
+                let img = document.getElementById("img4");
+                let resourceTiming = window.performance.getEntriesByName(img.currentSrc, "resource");
+                assert_equals(resourceTiming.length, 1, img.currentSrc);
+                assert_equals(img.naturalWidth, 100, img.currentSrc);
+            }, "should support dpr_auto");
+
+            test(t => {
+                let img = document.getElementById("img5");
+                let resourceTiming = window.performance.getEntriesByName(img.currentSrc, "resource");
+                assert_equals(resourceTiming.length, 1, img.currentSrc);
+                assert_equals(img.naturalWidth, 100, img.currentSrc);
+                //For some reason, w_auto sometimes returns:
+                //assert_equals(img.naturalWidth, 100);
+            }, "should support dpr_auto with w_auto");
+
+            promise_test(async t => {
+
+                // w_auto:breakpoints aren't working yet
+                let img = document.getElementById("img6");
+                let resourceTiming = window.performance.getEntriesByName(img.currentSrc, "resource");
+                if (resourceTiming.length === 0 || img.naturalWidth === 0) {
+                    t.set_status(t.NOTRUN, "w_auto:breakpoints aren't working yet");
+                    t.timeout_id = null;
+                    t.phase = t.phases.HAS_RESULT;
+                    t.done();
+
+                    return;
+                }
+                assert_equals(resourceTiming.length, 1, img.currentSrc);
+
+                let api = await fetch(img.currentSrc.replace(":breakpoints", ":breakpoints:json")).then(r => r.json());
+                let target = api.breakpoints.filter(n => n >= 405).sort().shift();
+                assert_equals(img.naturalWidth, Math.floor(target / window.devicePixelRatio), img.currentSrc);
+
+            }, "should support w_auto:breakpoints with width header");
+
+            promise_test(async t => {
+                let img = document.getElementById("img7");
+                let resourceTiming = window.performance.getEntriesByName(img.currentSrc, "resource");
+                if (resourceTiming.length === 0 || img.naturalWidth === 0) {
+                    t.set_status(t.NOTRUN, "w_auto:breakpoints aren't working yet");
+                    t.timeout_id = null;
+                    t.phase = t.phases.HAS_RESULT;
+                    t.done();
+
+                    return;
+                }
+
+                assert_equals(resourceTiming.length, 1, img.currentSrc);
+
+                let api = await fetch(img.currentSrc.replace(":breakpoints", ":breakpoints:json")).then(r => r.json());
+                let target = api.breakpoints.filter(n => n >= 200).sort().shift();
+                assert_equals(img.naturalWidth, target, img.currentSrc);
+            }, "should support dpr_auto with w_auto:breakpoints");
+
+            t.done();
+        }
+
+        window.addEventListener("load", runTests);
+    </script>
+</head>
+<body>
+
+<div style="transform:scale(.20);transform-origin: top left; max-height: 200px; width:4000px;">
+    <img id="img1" src="image/upload/sample.jpg"/>
+    <!-- Forcing the math to send a Width: header that when multiplied by the DPR has the same value of ~401px -->
+    <img id="img2" src="image/upload/w_auto/sample.jpg" sizes="(max-resolution: 1dppx) 401px, (max-resolution: 2dppx) 201px, (max-resolution: 3dppx) 134px, 100px"/>
+    <img id="img3" src="image/upload/w_auto:101/sample.jpg" sizes="(max-resolution: 1dppx) 405px, (max-resolution: 2dppx) 203px, (max-resolution: 3dppx) 135px, 102px"/>
+    <img id="img4" src="image/upload/w_100,dpr_auto/sample.jpg"/>
+    <img id="img5" src="image/upload/w_auto,dpr_auto/sample.jpg" sizes="100px"/>
+    <!-- We don't have all the things setup for w_auto:breakpoints -->
+    <img id="img6" src="image/upload/w_auto:breakpoints/sample.jpg" sizes="(max-resolution: 1dppx) 405px, (max-resolution: 2dppx) 203px, (max-resolution: 3dppx) 135px, 102px"/>
+    <img id="img7" src="image/upload/dpr_auto/w_auto:breakpoints/sample.jpg" sizes="200px"/>
+</div>
+
+</body>
+</html>

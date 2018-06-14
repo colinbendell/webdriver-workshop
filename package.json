@@ -1,0 +1,27 @@
+{
+  "name": "buzzjs-workshop",
+  "version": "1.0.0",
+  "description": "WebDriver BuzzJS Workshop",
+  "main": "index.js",
+  "scripts": {
+    "chromedriver": "chromedriver",
+    "test": "wdio",
+    "exercise2": "wdio --spec src/exercise2*_spec.js",
+    "exercise3": "wdio --spec src/exercise3*_spec.js",
+    "exercise4": "wdio --spec src/exercise4*_spec.js",
+    "exercise5": "wdio --spec src/exercise5*_spec.js",
+    "exercise6": "wdio --spec src/exercise6*_spec.js",
+    "exercise7": "wdio --spec src/exercise7*_spec.js",
+    "report": "allure generate allure-results --clean -o allure-report && open -a firefox allure-report/index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/colinbendell/webdriver-workshop"
+  },
+  "keywords": ["buzzjs","webdriver"],
+  "author": "Colin Bendell",
+  "license": "MIT",
+  "dependencies": {
+
+  }
+}
